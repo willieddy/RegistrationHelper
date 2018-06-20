@@ -21,7 +21,7 @@ public class RegistrationHelperController {
 
         String variantId = variantService.getIdFromAuth(authorization);
 
-        if (variantService.isInBlacklist(variantId) && registrationRequest.getDeviceToken().contains(":")) {
+        if (variantService.isInWhitelist(variantId) && registrationRequest.getDeviceToken().contains(":")) {
             fcmService.registerTopic(registrationRequest.getDeviceToken(), variantId);
         }
 
