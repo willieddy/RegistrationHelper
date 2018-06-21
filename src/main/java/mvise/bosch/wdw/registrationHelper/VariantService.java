@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Base64;
-import java.util.List;
 
 @Service
 public class VariantService {
@@ -12,10 +11,11 @@ public class VariantService {
     private static final int BASIC_AUTH_PREFIX_LENGTH = 6;
 
     @Autowired
-    private RHConfig rhConfig;
+    private ConfigProperties configProperties;
 
     boolean isInWhitelist(String variantId) {
-        return rhConfig.getVariantWhitelist().stream().anyMatch(variant -> variant.getVariantId().equals(variantId));
+        return configProperties.getVariantWhitelist().stream().anyMatch(
+                variant -> variant.getVariantId().equals(variantId));
     }
 
     /**
@@ -35,7 +35,7 @@ public class VariantService {
         return authString.substring(0, authString.indexOf(':'));
     }
 
-    protected void setRhConfig(RHConfig rhConfig) {
-        this.rhConfig = rhConfig;
+    void setConfigProperties(ConfigProperties configProperties) {
+        this.configProperties = configProperties;
     }
 }

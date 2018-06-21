@@ -21,18 +21,18 @@ public class VariantServiceTest {
 
     @Before
     public void init() {
-        RHConfig rhConfig = new RHConfig();
-
         Variant variant = new Variant();
         variant.setFcmApiKey(FCM_API_KEY);
         variant.setVariantId(VARIANT_ID);
 
         List<Variant> variantList = new ArrayList<>();
         variantList.add(variant);
-        rhConfig.setVariantWhitelist(variantList);
+
+        ConfigProperties configProperties = new ConfigProperties();
+        configProperties.setVariantWhitelist(variantList);
 
         variantService = new VariantService();
-        variantService.setRhConfig(rhConfig);
+        variantService.setConfigProperties(configProperties);
     }
 
     @Test
