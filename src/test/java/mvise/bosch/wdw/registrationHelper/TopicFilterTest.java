@@ -5,6 +5,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -21,7 +22,8 @@ public class TopicFilterTest {
     private static final String TOKEN_ID = "h093f09nh1f";
     private static final String TOKEN_ID_COLON = "h093f0:9nh1f";
 
-    private static final String REQUEST_URI = "https://localhost/ag-push/rest/registry/device";
+    private static final String POST_REQUEST_URI = "https://localhost/ag-push/rest/registry/device";
+    private static final String DELETE_REQUEST_URI = POST_REQUEST_URI + "/" + TOKEN_ID_COLON;
 
     private VariantService variantService = mock(VariantService.class);
     private FcmService fcmService = mock(FcmService.class);
@@ -94,7 +96,7 @@ public class TopicFilterTest {
 
         topicFilter.run();
 
-        verify(fcmService, times(0)).registerToken(TOKEN_ID_COLON, VARIANT_ID);
+        verify(fcmService, times(0)).registerToken(Mockito.anyString(), Mockito.anyString());
     }
 
     @Test
@@ -109,14 +111,59 @@ public class TopicFilterTest {
         verify(fcmService).deleteToken(TOKEN_ID_COLON);
     }
 
+    @Test
+    public void testRunDeleteNoColon() {
+        MockHttpServletRequest request = new MockHttpServletRequest(
+                HttpMethod.DELETE.toString(), POST_REQUEST_URI + "/" + TOKEN_ID);
+        request.addHeader(AUTH_KEY, AUTH_VALUE);
+        context.setRequest(request);
+
+        when(variantService.getIdFromAuth(AUTH_VALUE)).thenReturn(VARIANT_ID);
+        when(variantService.isInWhitelist(VARIANT_ID)).thenReturn(true);
+
+        topicFilter.run();
+
+        verify(fcmService, times(0)).deleteToken(Mockito.anyString());
+    }
+
+    @Test
+    public void testRunDeleteUrlEndsWithSlash() {
+        MockHttpServletRequest request = new MockHttpServletRequest(
+                HttpMethod.DELETE.toString(), DELETE_REQUEST_URI + "/");
+        request.addHeader(AUTH_KEY, AUTH_VALUE);
+        context.setRequest(request);
+
+        when(variantService.getIdFromAuth(AUTH_VALUE)).thenReturn(VARIANT_ID);
+        when(variantService.isInWhitelist(VARIANT_ID)).thenReturn(true);
+
+        topicFilter.run();
+
+        verify(fcmService).deleteToken(TOKEN_ID_COLON);
+    }
+
+    @Test
+    public void testRunDeleteUrlHasParameter() {
+        MockHttpServletRequest request = new MockHttpServletRequest(
+                HttpMethod.DELETE.toString(), DELETE_REQUEST_URI + "?breaksCode=false");
+        request.addHeader(AUTH_KEY, AUTH_VALUE);
+        context.setRequest(request);
+
+        when(variantService.getIdFromAuth(AUTH_VALUE)).thenReturn(VARIANT_ID);
+        when(variantService.isInWhitelist(VARIANT_ID)).thenReturn(true);
+
+        topicFilter.run();
+
+        verify(fcmService).deleteToken(TOKEN_ID_COLON);
+    }
+
     private void createRequest(HttpMethod method, String tokenId) {
         MockHttpServletRequest request = null;
 
         if (HttpMethod.POST.equals(method)) {
-            request = new MockHttpServletRequest(method.toString(), REQUEST_URI);
+            request = new MockHttpServletRequest(method.toString(), POST_REQUEST_URI);
             request.setContent(String.format("{\"deviceToken\":\"%s\"}", tokenId).getBytes());
         } else if (HttpMethod.DELETE.equals(method)) {
-            request = new MockHttpServletRequest(method.toString(), REQUEST_URI + tokenId);
+            request = new MockHttpServletRequest(method.toString(), DELETE_REQUEST_URI);
         }
 
         request.addHeader(AUTH_KEY, AUTH_VALUE);

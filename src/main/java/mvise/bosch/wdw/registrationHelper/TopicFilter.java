@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.stream.Collectors;
 
 public class TopicFilter extends ZuulFilter {
@@ -90,11 +92,16 @@ public class TopicFilter extends ZuulFilter {
      * @param request contains URI with deviceToken
      */
     private void handleDelete(HttpServletRequest request) {
-        String deviceToken= request.getRequestURI().substring(
-                request.getRequestURI().lastIndexOf('/'),
-                request.getRequestURI().length());
+        try {
+            String[] segments = new URI(request.getRequestURI()).getPath().split("/");
+            String deviceToken = segments[segments.length - 1];
 
-        fcmService.deleteToken(deviceToken);
+            if (deviceToken.contains(":")) {
+                fcmService.deleteToken(deviceToken);
+            }
+        } catch (URISyntaxException e) {
+            log.error("Improperly formatted URI: {}", request.getRequestURI(), e);
+        }
     }
 
     void setVariantService(VariantService variantService) {
